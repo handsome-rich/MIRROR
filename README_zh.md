@@ -34,9 +34,10 @@
 
 ## 📰 项目动态
 
+- **2026.10** &nbsp;开源两阶段训练代码，同步更新推理代码。
 - **2026.04** &nbsp;开源推理代码与 DINOv3-H+ 权重。
 - **2026.03** &nbsp;论文发布于 arXiv。
-- **即将发布** &nbsp;训练代码、完整 checkpoint zoo、Human-AIGI Benchmark 数据集。
+- **即将发布** &nbsp;完整 checkpoint zoo、Human-AIGI Benchmark 数据集。
 
 ---
 
@@ -115,7 +116,7 @@ $$
 
 - [x] 推理代码
 - [x] DINOv3-H+ 推理权重
-- [ ] 训练流程（阶段 1 + 阶段 2）
+- [x] 训练流程（阶段 1 + 阶段 2）
 - [ ] 完整 checkpoint zoo（DINOv2-L / DINOv3-L / DINOv3-H+）
 - [ ] Human-AIGI Benchmark 公开发布
 
@@ -132,7 +133,7 @@ git clone https://github.com/handsome-rich/MIRROR.git
 cd MIRROR
 
 # 请先根据 CUDA 版本从 https://pytorch.org 安装 torch
-pip install torch torchvision tqdm pillow numpy scikit-learn transformers peft
+pip install -r requirements.txt
 ```
 
 ### 2. 下载权重
@@ -188,6 +189,34 @@ base_data_path/
 └── B-Free/
 ```
 
+训练时，将真实图像和 AI 生成图像分别放入 `datasets/train/0_real/` 和 `datasets/train/1_fake/`；验证集 `datasets/val/` 使用相同结构。
+
+### 5. 训练 MIRROR
+
+**阶段 1 · Memory Bank**
+
+```bash
+python mmbank.py \
+  --dino_path  ./weight/dinov3-huge \
+  --input_path ./datasets/train/0_real \
+  --save_path  ./weight/phase1 \
+  --epochs 100
+```
+
+**阶段 2 · 检测器**
+
+```bash
+python main_finetune.py \
+  --backbone_path  ./weight/dinov3-huge \
+  --memory_path    ./weight/phase1/mirror_phase1_epoch_100.pth \
+  --data_path      ./datasets/train \
+  --eval_data_path ./datasets/val \
+  --output_dir    ./weight/phase2 \
+  --device cuda \
+  --num_workers 8 \
+  --epochs 100
+```
+
 ---
 
 ## ⚙️ 推理参数
@@ -195,7 +224,7 @@ base_data_path/
 | 参数 | 类型 | 说明 |
 |---|---|---|
 | `--model_path` | str | 阶段 2 checkpoint（`.pth`） |
-| `--memory_path` | str | 阶段 1 Memory Bank 权重 |
+| `--memory_path` | str | 阶段 1 Memory Bank 权重；阶段 2 checkpoint 已包含 Memory Bank 时可省略 |
 | `--backbone_path` | str | DINOv3 骨干权重目录 |
 | `--base_data_path` | str | 数据集根目录（包含各 benchmark 子文件夹） |
 | `--benchmarks` | list | 待评估的 benchmark 列表，如 `Chameleon GenImage` |

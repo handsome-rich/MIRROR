@@ -34,9 +34,10 @@ This shift unlocks two properties that prior detectors lack:
 
 ## 📰 News
 
+- **2026.10** &nbsp;Two-phase training code released; inference code updated.
 - **2026.04** &nbsp;Inference code and DINOv3-H+ weights released.
 - **2026.03** &nbsp;Paper released on arXiv.
-- **Coming soon** &nbsp;Training code, full checkpoint zoo, and the Human-AIGI Benchmark.
+- **Coming soon** &nbsp;Full checkpoint zoo and the Human-AIGI Benchmark.
 
 ---
 
@@ -115,7 +116,7 @@ See the paper for full psychophysics and the per-generator breakdown.
 
 - [x] Inference code
 - [x] DINOv3-H+ inference weights
-- [ ] Training code (Phase 1 + Phase 2)
+- [x] Training code (Phase 1 + Phase 2)
 - [ ] Full checkpoint zoo (DINOv2-L / DINOv3-L / DINOv3-H+)
 - [ ] Human-AIGI Benchmark public release
 
@@ -132,7 +133,7 @@ git clone https://github.com/handsome-rich/MIRROR.git
 cd MIRROR
 
 # Install PyTorch first per your CUDA version: https://pytorch.org
-pip install torch torchvision tqdm pillow numpy scikit-learn transformers peft
+pip install -r requirements.txt
 ```
 
 ### 2. Download Weights
@@ -188,6 +189,34 @@ base_data_path/
 └── B-Free/
 ```
 
+For training, place real and AI-generated images in `datasets/train/0_real/` and `datasets/train/1_fake/`; use the same structure under `datasets/val/` for validation.
+
+### 5. Train MIRROR
+
+**Phase 1 · Memory Bank**
+
+```bash
+python mmbank.py \
+  --dino_path  ./weight/dinov3-huge \
+  --input_path ./datasets/train/0_real \
+  --save_path  ./weight/phase1 \
+  --epochs 100
+```
+
+**Phase 2 · Detector**
+
+```bash
+python main_finetune.py \
+  --backbone_path  ./weight/dinov3-huge \
+  --memory_path    ./weight/phase1/mirror_phase1_epoch_100.pth \
+  --data_path      ./datasets/train \
+  --eval_data_path ./datasets/val \
+  --output_dir    ./weight/phase2 \
+  --device cuda \
+  --num_workers 8 \
+  --epochs 100
+```
+
 ---
 
 ## ⚙️ Inference Arguments
@@ -195,7 +224,7 @@ base_data_path/
 | Flag | Type | Description |
 |---|---|---|
 | `--model_path` | str | Phase 2 checkpoint (`.pth`) |
-| `--memory_path` | str | Phase 1 memory-bank weights |
+| `--memory_path` | str | Phase 1 memory-bank weights; optional when the Phase 2 checkpoint includes the memory bank |
 | `--backbone_path` | str | DINOv3 backbone directory |
 | `--base_data_path` | str | Root directory containing benchmark sub-folders |
 | `--benchmarks` | list | Benchmarks to evaluate, e.g. `Chameleon GenImage` |
