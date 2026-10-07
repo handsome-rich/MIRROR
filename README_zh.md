@@ -37,7 +37,7 @@
 - **2026.10** &nbsp;开源两阶段训练代码，同步更新推理代码。
 - **2026.04** &nbsp;开源推理代码与 DINOv3-H+ 权重。
 - **2026.03** &nbsp;论文发布于 arXiv。
-- **即将发布** &nbsp;完整 checkpoint zoo、Human-AIGI Benchmark 数据集。
+- **即将发布** &nbsp;Human-AIGI Benchmark 数据集。
 
 ---
 
@@ -117,7 +117,6 @@ $$
 - [x] 推理代码
 - [x] DINOv3-H+ 推理权重
 - [x] 训练流程（阶段 1 + 阶段 2）
-- [ ] 完整 checkpoint zoo（DINOv2-L / DINOv3-L / DINOv3-H+）
 - [ ] Human-AIGI Benchmark 公开发布
 
 ---
@@ -243,10 +242,10 @@ CSV 报告路径为 `results/{benchmark}_{timestamp}.csv`，包含 `Acc / Bal_Ac
 
 ```bibtex
 @article{liu2026mirror,
-  title   = {MIRROR: Manifold Ideal Reference ReconstructOR for Generalizable AI-Generated Image Detection},
-  author  = {Liu, Ruiqi and Cui, Manni and Qin, Ziheng and Yan, Zhiyuan and Chen, Ruoxin and Han, Yi and Li, Zhiheng and Chen, Junkai and Chen, ZhiJin and Lin, Kaiqing and others},
-  journal = {arXiv preprint arXiv:2602.02222},
-  year    = {2026}
+  title={MIRROR: Manifold Ideal Reference ReconstructOR for Generalizable AI-Generated Image Detection},
+  author={Liu, Ruiqi and Cui, Manni and Qin, Ziheng and Yan, Zhiyuan and Chen, Ruoxin and Han, Yi and Li, Zhiheng and Chen, Junkai and Chen, ZhiJin and Lin, Kaiqing and others},
+  journal={NeurIPS 2026},
+  year={2026}
 }
 ```
 

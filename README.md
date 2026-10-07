@@ -37,7 +37,7 @@ This shift unlocks two properties that prior detectors lack:
 - **2026.10** &nbsp;Two-phase training code released; inference code updated.
 - **2026.04** &nbsp;Inference code and DINOv3-H+ weights released.
 - **2026.03** &nbsp;Paper released on arXiv.
-- **Coming soon** &nbsp;Full checkpoint zoo and the Human-AIGI Benchmark.
+- **Coming soon** &nbsp;The Human-AIGI Benchmark.
 
 ---
 
@@ -117,7 +117,6 @@ See the paper for full psychophysics and the per-generator breakdown.
 - [x] Inference code
 - [x] DINOv3-H+ inference weights
 - [x] Training code (Phase 1 + Phase 2)
-- [ ] Full checkpoint zoo (DINOv2-L / DINOv3-L / DINOv3-H+)
 - [ ] Human-AIGI Benchmark public release
 
 ---
@@ -243,10 +242,10 @@ If MIRROR helps your research, please cite:
 
 ```bibtex
 @article{liu2026mirror,
-  title   = {MIRROR: Manifold Ideal Reference ReconstructOR for Generalizable AI-Generated Image Detection},
-  author  = {Liu, Ruiqi and Cui, Manni and Qin, Ziheng and Yan, Zhiyuan and Chen, Ruoxin and Han, Yi and Li, Zhiheng and Chen, Junkai and Chen, ZhiJin and Lin, Kaiqing and others},
-  journal = {arXiv preprint arXiv:2602.02222},
-  year    = {2026}
+  title={MIRROR: Manifold Ideal Reference ReconstructOR for Generalizable AI-Generated Image Detection},
+  author={Liu, Ruiqi and Cui, Manni and Qin, Ziheng and Yan, Zhiyuan and Chen, Ruoxin and Han, Yi and Li, Zhiheng and Chen, Junkai and Chen, ZhiJin and Lin, Kaiqing and others},
+  journal={NeurIPS 2026},
+  year={2026}
 }
 ```
 
