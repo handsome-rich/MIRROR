@@ -23,12 +23,12 @@
 > *"Perception is a process of hypothesis testing."*
 > &nbsp;&nbsp;&nbsp;&nbsp;Richard L. Gregory, 1980
 
-**MIRROR** reframes AI-generated image (AIGI) detection: instead of binary *artifact* classification, it casts detection as a **Reference-Comparison** process. A learnable, orthogonal **Memory Bank** explicitly encodes the manifold of *real* images. Each input is projected onto this manifold via sparse top-$k$ attention to construct an **Ideal Reference**, and the **comparison residual** between the input and its reference becomes a generator-agnostic detection signal.
+**MIRROR** reframes AI-generated image (AIGI) detection as a **Reference-Comparison** process. A learnable, diversity-regularized **Memory Bank** captures feature regularities of *real* images. Sparse top-$k$ attention reconstructs an input-conditioned **Ideal Reference**, and the **comparison residual** and retrieval uncertainty, together with global image context, drive the final detection score.
 
-This shift unlocks two properties that prior detectors lack:
+This design brings two properties:
 
-- 📈 **Backbone scalability.** Accuracy keeps climbing as DINOv3 scales from Base to Huge, while NPR / UnivFD / DDA saturate.
-- 👁️ **Superhuman robustness.** On the human-imperceptible split of our Human-AIGI benchmark, MIRROR reaches **89.6%** across **27 generators**, surpassing both lay users and CV experts.
+- 📈 **Backbone scalability.** Accuracy keeps climbing as DINOv3 scales from Base to Huge, while the evaluated NPR / UnivFD / DDA configurations show limited gains.
+- 👁️ **Human-level comparison.** On the original Human-AIGI set covering **27 generators**, DINOv3-L reaches **89.6%** and DINOv3-H+ reaches **93.6%** fake-image accuracy, exceeding the lay-user and CV-expert means and approaching the AIGI-expert mean. DINOv3-L retains **89.5%** on the human-imperceptible subset.
 
 ---
 
@@ -46,10 +46,10 @@ This shift unlocks two properties that prior detectors lack:
 | | |
 |---|---|
 | 🔄 **New paradigm** | Reference-Comparison instead of artifact hunting |
-| 🏆 **State of the art** | +2.1% on 6 standard benchmarks, +8.1% on 7 in-the-wild benchmarks |
-| 👁️ **Superhuman** | 89.6% on Human-AIGI hard subset, beats lay users *and* CV experts |
-| 📈 **Scales with backbone** | Sustained gains from DINOv3-Base to -Huge; competitors saturate |
-| 🧠 **Reality memory bank** | $K$ orthogonal prototypes encoding stable real-image regularities |
+| 🏆 **State of the art** | +2.1 percentage points on 6 standard benchmarks, +8.1 points across 7 in-the-wild benchmarks |
+| 👁️ **Human-level comparison** | Human-AIGI Orig.: 89.6% (L), 93.6% (H+); Hard: 89.5% (L) |
+| 📈 **Scales with backbone** | Sustained gains from DINOv3-Base to -Huge in the evaluated configurations |
+| 🧠 **Reality memory bank** | $K$ prototypes with a row-normalized Gram diversity penalty to encourage low coherence |
 | 🔬 **First-of-its-kind benchmark** | Psychophysically curated Human-AIGI set, 50 participants, 27 generators |
 
 ---
@@ -60,23 +60,23 @@ MIRROR is a two-phase framework (see `fig/method.pdf`).
 
 ### Phase 1 · Encoding Reality Priors
 
-A frozen DINOv3 encoder extracts patch-level features from *real* images only. A learnable memory bank $\mathbf{M} \in \mathbb{R}^{K \times D}$ of orthogonal prototypes is trained with sparse top-$k$ cross-attention reconstruction plus an orthogonality regularizer:
+A frozen DINOv3 encoder extracts feature tokens $F \in \mathbb{R}^{N \times D}$ from *real* images only. We train the memory bank $\mathbf{M} \in \mathbb{R}^{K \times D}$ and all sparse top-$k$ attention projections using mean-squared reconstruction error and a row-normalized Gram diversity penalty:
 
 $$
-\mathcal{L}_{\text{Phase1}} \;=\; \lVert F - \hat{F} \rVert_2^2 \;+\; \lambda \,\lVert \mathbf{M}\mathbf{M}^{\top} - \mathbf{I} \rVert_F
+\mathcal{L}_{\text{Phase1}} \;=\; \frac{\lVert F - \hat{F} \rVert_F^2}{ND} \;+\; \lambda \,\lVert \bar{\mathbf{M}}\bar{\mathbf{M}}^{\top} - \mathbf{I}_K \rVert_F
 $$
 
-The first term forces $\hat{F}$ to faithfully reconstruct the real-image manifold; the second term keeps prototypes diverse and non-redundant.
+Here $N$ is the number of feature tokens, $D$ is the feature dimension, and $\bar{\mathbf{M}}$ is the row-normalized memory bank. The first term learns real-feature reconstruction; the second encourages low coherence and reduces prototype redundancy in the overcomplete bank. The default configuration uses $K=4096$ prototypes and retrieves $k=128$ entries per attention head.
 
 ### Phase 2 · Reference-Comparison Detection
 
-With $\mathbf{M}$ frozen, each input is projected onto the real-image manifold via the same sparse top-$k$ attention to produce its Ideal Reference $\hat{F}$. Real images align tightly with their reference; AI-generated images carry physical inconsistencies (illumination, geometry, texture statistics) that the reality memory cannot explain, producing a large **comparison residual**. The residual together with the reconstruction perplexity drive the final score.
+The memory bank **and attention projector stay frozen**, while encoder **LoRA adapters and the detection head** are trained with real/fake supervision. Each input is reconstructed through the same sparse attention to form its Ideal Reference $\hat{F}$. The head combines the token-averaged **comparison residual**, **reconstruction perplexity** learned from attention maximum and entropy, and the encoder's global **CLS token** to predict the fake-class probability.
 
 ---
 
 ## 📊 Results
 
-All numbers are **Balanced Accuracy (%)** with format-aligned inputs (PNG to JPG).
+Paired real/fake benchmarks report **Balanced Accuracy (B.Acc., %)**; generated-only CO-SPY and Human-AIGI report **Fake Accuracy (F.Acc., %)**. Results use format-aligned inputs.
 
 ### 13 standard + in-the-wild benchmarks
 
@@ -96,17 +96,19 @@ All numbers are **Balanced Accuracy (%)** with format-aligned inputs (PNG to JPG
 | | RR-Dataset | 70.3 (DDA) | 76.8 | 78.9 | **88.3** | **+18.0** |
 | | BFree-Online | 87.1 (B-Free) | 84.3 | 83.0 | **97.6** | **+10.5** |
 
-> Aggregate: **+2.1%** average on 6 standard benchmarks, **+8.1%** average on 7 in-the-wild benchmarks vs the previous SOTA.
+> DINOv3-L improves the six-standard-benchmark average by **2.1 percentage points** over B-Free and the in-the-wild score by **8.1 points** over DDA. The in-the-wild score is the unweighted mean of **16 evaluation columns** across seven datasets.
 
 ### Human-AIGI · the 14th benchmark
 
-A psychophysically curated benchmark covering **27 generators**, with a hard subset selected from a 50-participant study using accuracy, confidence, and response time. Designed to measure when detectors cross the *Superhuman Crossover* line.
+A psychophysically curated benchmark covering **27 generators**, studied with **50 participants**. The Hard subset contains generated images whose mean perceived-realism rating is at least **3** on a 4-point scale, or whose mean response time exceeds $\mu_{rt}+\sigma_{rt}$. Here $\mu_{rt}$ and $\sigma_{rt}$ are the mean and standard deviation of per-image mean response times on Orig. Both Orig. and Hard contain generated images and use **F.Acc.**; the human reference levels below are measured on Orig.
 
-| Method | Hard subset Acc. (%) |
-|---|---:|
-| Lay users (untrained) | ~ 55 |
-| CV experts (no forensics training) | ~ 73 |
-| **MIRROR (DINOv3-H+)** | **89.6** |
+| Method | Orig. F.Acc. (%) | Hard F.Acc. (%) |
+|---|---:|---:|
+| Lay users (untrained) | 76.9 | — |
+| CV experts (no forensics training) | 88.3 | — |
+| AIGI-detection experts | 94.5 | — |
+| **MIRROR (DINOv3-L)** | **89.6** | **89.5** |
+| **MIRROR (DINOv3-H+)** | **93.6** | — |
 
 See the paper for full psychophysics and the per-generator breakdown.
 
@@ -191,6 +193,8 @@ base_data_path/
 For training, place real and AI-generated images in `datasets/train/0_real/` and `datasets/train/1_fake/`; use the same structure under `datasets/val/` for validation.
 
 ### 5. Train MIRROR
+
+Example commands for two-phase training:
 
 **Phase 1 · Memory Bank**
 
